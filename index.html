@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f5f7fb" />
+    <meta name="description" content="A private, browser-based spreadsheet quality check and analysis workspace." />
+    <title>Clarity — Spreadsheet Data Assistant</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.6.1/dist/chart.umd.min.js"></script>
+    <script defer src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+    <script defer src="app.js"></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Main navigation">
+        <a class="brand" href="#top" aria-label="Clarity home">
+          <span class="brand-mark"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M6 7.5A2.5 2.5 0 0 1 8.5 5H24a2 2 0 0 1 2 2v17a2 2 0 0 1-2 2H8.5A2.5 2.5 0 0 1 6 23.5z"/><path d="M6 10h20M12 10v16M19 10v16M6 16h20M6 21h20"/></svg></span>
+          <span class="brand-copy"><strong>clarity</strong><small>DATA WORKSPACE</small></span>
+        </a>
+        <div class="sidebar-label" data-i18n="workspace">WORKSPACE</div>
+        <button class="nav-item active" type="button"><span class="nav-icon">⌂</span><span data-i18n="overview">Overview</span></button>
+        <button class="nav-item" type="button" id="navUpload"><span class="nav-icon">＋</span><span data-i18n="newAnalysis">New analysis</span></button>
+        <div class="sidebar-divider"></div>
+        <div class="sidebar-label" data-i18n="yourData">YOUR DATA</div>
+        <div class="empty-history"><span class="history-icon">▤</span><span data-i18n="historyEmpty">Your recent files will<br />appear here</span></div>
+        <div class="sidebar-bottom">
+          <div class="privacy-card"><span class="privacy-dot"></span><div><strong data-i18n="privateByDesign">Private by design</strong><small data-i18n="privateCopy">Files stay in this browser</small></div></div>
+          <div class="sidebar-foot">CLARITY · 1.0.0</div>
+        </div>
+      </aside>
+
+      <main class="main-content" id="top">
+        <header class="topbar">
+          <div class="breadcrumbs"><span data-i18n="workspace">Workspace</span><span class="crumb-slash">/</span><strong data-i18n="overview">Overview</strong></div>
+          <div class="top-actions">
+            <span class="local-badge"><span class="privacy-dot"></span><span data-i18n="localOnly">LOCAL ONLY</span></span>
+            <button class="language-toggle" id="languageToggle" type="button" aria-label="Switch language"><span id="languageLabel">中文</span><span class="globe">◎</span></button>
+            <div class="avatar" aria-label="Guest user">G</div>
+          </div>
+        </header>
+
+        <div class="page-wrap">
+          <section class="welcome-row">
+            <div>
+              <p class="eyebrow"><span class="sparkle">✳</span><span data-i18n="eyebrow">YOUR SPREADSHEET, IN FOCUS</span></p>
+              <h1 data-i18n="welcomeTitle">Make better decisions<br class="mobile-break" /> with your data.</h1>
+              <p class="welcome-subtitle" data-i18n="welcomeSubtitle">A clear, private first look at every spreadsheet.</p>
+            </div>
+            <button class="button button-primary welcome-upload" id="welcomeUpload" type="button"><span class="button-plus">＋</span><span data-i18n="uploadFile">Upload a file</span></button>
+          </section>
+
+          <section class="upload-panel" id="uploadPanel" aria-labelledby="uploadHeading">
+            <input id="fileInput" type="file" accept=".csv,.xlsx,.xls,.xlsm,.ods,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" hidden />
+            <button class="drop-zone" id="dropZone" type="button" aria-label="Choose a spreadsheet file">
+              <span class="upload-illustration"><svg viewBox="0 0 64 64" aria-hidden="true"><rect x="11" y="13" width="42" height="38" rx="8"/><path d="M11 25h42M24 25v26M39 25v26M11 38h42"/><path d="M32 7v17m-6-6 6-6 6 6" class="upload-arrow"/></svg></span>
+              <span class="drop-copy"><strong id="uploadHeading" data-i18n="dropTitle">Drop your spreadsheet here</strong><span data-i18n="dropSubtitle">or click to browse from your device</span><small data-i18n="supportedTypes">XLSX, XLS, XLSM, ODS or CSV · Up to 25 MB</small></span>
+              <span class="button button-secondary" data-i18n="chooseFile">Choose file</span>
+            </button>
+            <div class="upload-footnote"><span>♧</span><span data-i18n="privacyNote">Your file is processed locally and never uploaded to a server.</span></div>
+          </section>
+
+          <div class="notice" id="notice" role="status" aria-live="polite" hidden></div>
+
+          <section id="analysisArea" hidden>
+            <div class="file-toolbar">
+              <div class="file-heading"><span class="file-icon">▦</span><div><strong id="fileName">—</strong><small id="fileMeta">—</small></div></div>
+              <div class="toolbar-actions">
+                <label class="sheet-picker"><span data-i18n="sheet">Sheet</span><select id="sheetSelect" aria-label="Select worksheet"></select></label>
+                <button class="button button-light" id="reportButton" type="button"><span>⇩</span><span data-i18n="downloadReport">Download report</span></button>
+                <button class="button button-outline" id="cleanButton" type="button"><span>⇩</span><span data-i18n="exportClean">Export cleaned data</span></button>
+              </div>
+            </div>
+
+            <div class="stat-grid" id="statGrid"></div>
+
+            <div class="content-grid">
+              <section class="card preview-card">
+                <div class="card-heading"><div><h2 data-i18n="dataPreview">Data preview</h2><p data-i18n="previewCaption">A read-only look at the first rows</p></div><span class="pill pill-muted" id="previewCount">—</span></div>
+                <div class="table-wrap" id="tableWrap"><table id="dataTable"></table></div>
+                <div class="table-footer"><span id="pageLabel">—</span><div class="pager"><button id="prevPage" type="button" aria-label="Previous page">‹</button><button id="nextPage" type="button" aria-label="Next page">›</button></div></div>
+              </section>
+
+              <section class="card chart-card">
+                <div class="card-heading"><div><h2 data-i18n="distribution">Column distribution</h2><p data-i18n="distributionCaption">Explore values in a field</p></div><span class="chart-dot"></span></div>
+                <label class="field-select-wrap"><span data-i18n="field">Field</span><select id="chartField" aria-label="Choose a field to chart"></select></label>
+                <div class="chart-wrap"><canvas id="distributionChart" aria-label="Selected field distribution" role="img"></canvas><div id="chartFallback" class="chart-fallback" hidden></div></div>
+                <div class="chart-legend" id="chartLegend"></div>
+              </section>
+            </div>
+
+            <div class="lower-grid">
+              <section class="card quality-card">
+                <div class="card-heading"><div><h2 data-i18n="qualityChecks">Data quality checks</h2><p data-i18n="qualityCaption">Signals to review before analysis</p></div><span class="quality-status" id="qualityStatus">✓</span></div>
+                <div id="qualityList" class="quality-list"></div>
+              </section>
+              <section class="card profile-card">
+                <div class="card-heading"><div><h2 data-i18n="columnProfile">Column profile</h2><p data-i18n="profileCaption">Completeness and numeric summary</p></div><span class="pill pill-muted" data-i18n="allFields">ALL FIELDS</span></div>
+                <div class="profile-list" id="profileList"></div>
+              </section>
+            </div>
+
+            <section class="card cleaning-card">
+              <div class="cleaning-copy"><span class="clean-icon">✦</span><div><h2 data-i18n="cleanExportTitle">Create a clean copy</h2><p data-i18n="cleanExportCaption">Your original stays untouched. Choose what to leave out of the downloaded file.</p></div></div>
+              <div class="cleaning-options"><label class="check-option"><input type="checkbox" id="removeDuplicates" checked /><span class="custom-check"></span><span data-i18n="removeDuplicates">Remove exact duplicate rows</span></label><label class="check-option"><input type="checkbox" id="removeBlankRows" checked /><span class="custom-check"></span><span data-i18n="removeBlankRows">Remove completely blank rows</span></label><button class="button button-primary" id="cleanButtonBottom" type="button"><span data-i18n="downloadCleanCopy">Download clean copy</span><span>↗</span></button></div>
+            </section>
+            <p class="analysis-disclaimer"><span>ⓘ</span><span data-i18n="analysisDisclaimer">Automated checks highlight patterns for review. Statistical outliers are not necessarily errors. Verify business meaning before changing data.</span></p>
+          </section>
+
+          <section class="starter-card" id="starterCard">
+            <div class="starter-head"><div><p class="eyebrow" data-i18n="gettingStarted">GETTING STARTED</p><h2 data-i18n="startTitle">From raw rows to a clearer picture.</h2><p data-i18n="startCaption">A practical workspace for your first pass at spreadsheet data.</p></div><div class="mini-art" aria-hidden="true"><span></span><span></span><span></span><span></span><i></i></div></div>
+            <div class="step-grid">
+              <article class="step-item"><span class="step-num">01</span><div><h3 data-i18n="step1Title">Bring your data</h3><p data-i18n="step1Text">Choose an Excel or CSV file from your device.</p></div><span class="step-symbol">↥</span></article>
+              <article class="step-item"><span class="step-num">02</span><div><h3 data-i18n="step2Title">Review the signals</h3><p data-i18n="step2Text">See missing values, duplicates and unusual ranges.</p></div><span class="step-symbol">⌕</span></article>
+              <article class="step-item"><span class="step-num">03</span><div><h3 data-i18n="step3Title">Take it with you</h3><p data-i18n="step3Text">Export a structured report or a cleaned copy.</p></div><span class="step-symbol">↗</span></article>
+            </div>
+            <div class="sample-row"><span class="sample-icon">▧</span><span data-i18n="sampleHint">Want to see how it works?</span><button id="sampleButton" type="button" data-i18n="loadSample">Load sample data</button></div>
+          </section>
+
+          <footer class="page-footer"><span>© 2026 Clarity Data Workspace</span><span data-i18n="footerPrivacy">Built for careful, local-first analysis</span></footer>
+        </div>
+      </main>
+    </div>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  </body>
+</html>
